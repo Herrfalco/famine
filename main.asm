@@ -1,9 +1,3 @@
-				extern			sc_get_full_path
-				extern			sc_get_fd_size
-				extern			sc_check_infection
-				extern			sc_str_n_cmp
-				extern			sc_write_pad
-
 				default			rel
 sc:
 				push			rbp
@@ -588,7 +582,39 @@ sc_get_fd_size:
 				mov				rsp,					rbp
 				pop				rbp
 				ret
+sc_str_n_cmp:
+				cmp				rdi,					0
+				je				.end
 
+				cmp				rdi,					rsi
+				jne				.end
+
+				dec				rdx
+				cmp				rdx,					0
+				jg				sc_str_n_cmp
+ .end:
+				mov				rax,					rdi
+				sub				rax,					rsi
+				ret
+sc_get_full_path:
+ 				cmp				rdi,					0
+				je				.loop
+
+				mov				rdx,					rdi
+				inc				rdi
+				inc				rdx
+				jmp				sc_get_full_path
+ .loop:
+ 				cmp				rsi,					0
+				je				.end
+
+				mov				rdx,					rsi
+				inc				rsi
+				inc				rdx
+				jmp				.loop
+ .end:
+ 				mov				rdx,					0
+				ret
 sc_end:
 
 sc_data:

@@ -60,7 +60,7 @@ t_buffs			buffs = { 0 };
 
 uint8_t			*mem = NULL;
 uint64_t		x_pad = 0;
-
+/*
 int		ret_close(int fd, int ret) {
 	if (fd >= 0)
 		close(fd);
@@ -81,7 +81,7 @@ int		str_n_cmp(char *s1, char *s2, int n) {
 			break;
 	return (*s1 - *s2);
 }
-/*
+
 int64_t			get_fd_size(int fd) {
 	int64_t		size;
 
