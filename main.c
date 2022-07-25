@@ -116,7 +116,7 @@ static int		map_file(uint8_t *path) {
 		return (ret_close(src, -1));
 	return (ret_close(src, 0));
 }
-
+/*
 static void		write_mem(uint8_t *path) {
 	int			dst;
 	int64_t		w_ret;
@@ -134,7 +134,7 @@ static void		write_mem(uint8_t *path) {
 			|| write(dst, SIGN, SIGN_SZ) != SIGN_SZ)
 	close(dst);
 }
-/*
+
 static int		test_elf_hdr(void) {
 	if (str_n_cmp((char *)hdrs.elf->e_ident, (IDENT), 5)
 			|| (hdrs.elf->e_type != ET_EXEC && hdrs.elf->e_type != ET_DYN)
