@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/24 23:14:22 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/25 13:27:09 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ extern uint8_t		sc_end;
 extern uint8_t		sc_data;
 extern uint8_t		sc_data_end;
 extern uint64_t		sc_entry;
-extern uint64_t		sc_old_entry;
+extern uint64_t		sc_real_entry;
 
 typedef struct		s_hdrs {
 	Elf64_Ehdr		*elf;
@@ -190,7 +190,7 @@ static int		set_x_pad(void) {
 
 static int		update_mem(void) {
 	sc_entry = hdrs.txt->p_vaddr + hdrs.txt->p_memsz;
-	sc_old_entry = hdrs.elf->e_entry;
+	sc_real_entry = hdrs.elf->e_entry;
 	hdrs.elf->e_entry = sc_entry;
 	hdrs.txt->p_filesz += sz.load;
 	hdrs.txt->p_memsz += sz.load;

