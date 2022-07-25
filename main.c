@@ -81,7 +81,7 @@ int		str_n_cmp(char *s1, char *s2, int n) {
 			break;
 	return (*s1 - *s2);
 }
-
+/*
 int64_t			get_fd_size(int fd) {
 	int64_t		size;
 
@@ -89,7 +89,7 @@ int64_t			get_fd_size(int fd) {
 		return (-1);
 	return (size);
 }
-/*
+
 int		write_pad(int fd, uint64_t size) {
 	uint64_t			write_sz = 0;
 	int64_t				w_ret;

@@ -556,6 +556,39 @@ sc_write_pad:
 				mov				rsp,					rbp
 				pop				rbp
 				ret
+sc_get_fd_size:
+				push			rbp
+				mov				rbp,					rsp
+				sub				rsp,					8;	fd
+
+				mov				qword[rsp],				rdi
+				mov				rsi,					0
+				mov				rdx,					0
+				mov				rax,					8
+				syscall
+				
+				cmp				rax,					0
+				jne				.error
+
+				mov				rdi,					qword[rsp]
+				mov				rsi,					0
+				mov				rdx,					2
+				mov				rax,					8
+				syscall
+
+				cmp				rax,					0
+				jl				.error
+				
+				jmp				.end
+
+ .error:
+ 				mov				rax,					-1	
+ .end:
+				add				rsp,					8
+				mov				rsp,					rbp
+				pop				rbp
+				ret
+
 sc_end:
 
 sc_data:
