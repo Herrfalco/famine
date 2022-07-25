@@ -89,7 +89,7 @@ int64_t			get_fd_size(int fd) {
 		return (-1);
 	return (size);
 }
-
+/*
 int		write_pad(int fd, uint64_t size) {
 	uint64_t			write_sz = 0;
 	int64_t				w_ret;
@@ -116,7 +116,7 @@ static int		map_file(uint8_t *path) {
 		return (ret_close(src, -1));
 	return (ret_close(src, 0));
 }
-/*
+
 static void		write_mem(uint8_t *path) {
 	int			dst;
 	int64_t		w_ret;
