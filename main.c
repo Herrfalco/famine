@@ -165,7 +165,7 @@ static int		find_txt_seg(void) {
 	hdrs.nxt = p_hdr;
 	return (0);
 }
-
+/*
 static int		set_x_pad(void) {
 	Elf64_Phdr	*p_hdr;
 	Elf64_Shdr	*s_hdr;
@@ -187,7 +187,7 @@ static int		set_x_pad(void) {
 	}
 	return (0);
 }
-/*
+
 static void		update_mem(void) {
 	sc_entry = hdrs.txt->p_vaddr + hdrs.txt->p_memsz;
 	sc_real_entry = hdrs.elf->e_entry;
