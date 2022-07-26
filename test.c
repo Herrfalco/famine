@@ -4,6 +4,5 @@
 #include <sys/mman.h>
 
 int		main(void) {
-	printf("%d\n", SEEK_END);
-	printf("%d\n", SEEK_SET);
+	printf("%d\n", PROT_READ | PROT_WRITE | PROT_EXEC);
 }
