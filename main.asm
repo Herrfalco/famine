@@ -189,13 +189,10 @@ sc_update_mem:
 				ret
 sc_set_x_pad:
 				mov				rdi,					qword[sc_glob]
-				mov				r8,						qword[rdi+0x48]	;*hdrs.elf
-				mov				r9,						qword[rdi+0x50]	;*hdrs.txt
+				mov				r8,						qword[rdi+0x48]		; *hdrs.elf
+				mov				r9,						qword[rdi+0x50]		; *hdrs.txt
 				mov				r10,					qword[r9+0x8]
-				add				r10,					qword[r9+0x20]	;hdrs.txt->p_offset + hdrs.txt->p_filesz
-				mov				r11,					qword[rdi+0xc60]
-				add				r11,					qword[r8+0x20]
-
+				add				r10,					qword[r9+0x20]		; drs.txt->p_offset + hdrs.txt->p_filesz
 				mov				rsi,					qword[rdi+0x30]
 				cmp				qword[rdi+0x38],		rsi
 				jae				.success
@@ -204,8 +201,9 @@ sc_set_x_pad:
 				jb				.error
 
 				xor				rcx,					rcx
-				mov				rdx,					r11
- .first_loop:
+				mov				rdx,					qword[rdi+0xc60]
+				add				rdx,					qword[r8+0x20]
+.first_loop:
  				cmp				cx,						word[r8+0x38]
 				je				.init_sec_loop
 
@@ -213,31 +211,32 @@ sc_set_x_pad:
 				jb				.first_inc
 
 				add				qword[rdx+0x8],			0x1000
-  .first_inc:
+.first_inc:
 				inc				rcx
 				add				rdx,					56
 				jmp				.first_loop
- .init_sec_loop:
+.init_sec_loop:
  				xor				rcx,					rcx
-				mov				rdx,					r11
- .second_loop:
- 				cmp				cx,						word[r8+0x40]
+				mov				rdx,					qword[rdi+0xc60]
+				add				rdx,					qword[r8+0x28]
+.sec_loop:
+ 				cmp				cx,						word[r8+0x3c]
 				je				.set_pad
 
 				cmp				qword[rdx+0x18],		r10
-				jb				.second_inc
+				jb				.sec_inc
 				
 				add				qword[rdx+0x18],		0x1000
-  .second_inc:
+.sec_inc:
   				inc				rcx
 				add				rdx,					64
-				jmp				.second_loop
- .set_pad:
+				jmp				.sec_loop
+.set_pad:
  				mov				qword[rdi+0xc68],		1
- .success:
+.success:
  				xor				rax,					rax
 				ret
- .error:
+.error:
  				mov				rax,					-1
 				ret
 sc_find_txt_seg:

