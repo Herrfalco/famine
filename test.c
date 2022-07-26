@@ -2,5 +2,5 @@
 #include <stdio.h>
 
 int		main(void) {
-	printf("%ld\n", sizeof(Elf64_Shdr));
+	printf("%d\n", PT_LOAD);
 }

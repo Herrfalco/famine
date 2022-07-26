@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/26 12:29:02 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/26 13:17:17 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,6 +152,7 @@ static int		check_infection(void) {
 	return (0);
 }
 
+OK
 static int		find_txt_seg(void) {
 	Elf64_Phdr	*p_hdr;
 	uint64_t	i;
