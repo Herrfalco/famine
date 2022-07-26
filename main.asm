@@ -1,3 +1,4 @@
+
 				default			rel
 				global			main
 main:
@@ -427,7 +428,7 @@ sc_write_mem:
 				ret
 sc_map_file:
 				push			rbp
-				mov				rbp,					rbp
+				mov				rbp,					rsp
 				sub				rsp,					8			; src
 
 				mov				rsi,					2
@@ -452,7 +453,7 @@ sc_map_file:
 				mov				rdi,					0
 				mov				rsi,					rax
 				mov				rdx,					3
-				mov				rcx,					2
+				mov				r10,					2
 				mov				r8,						qword[rsp]
 				mov				r9,						0
 				mov				rax,					9
