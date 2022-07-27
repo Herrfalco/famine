@@ -165,7 +165,8 @@ OK
 static int		find_txt_seg(void) {
 	Elf64_Phdr	*p_hdr;
 	uint64_t	i;
-
+	
+	hdrs.txt = 0;
 	for (i = 0, p_hdr = (Elf64_Phdr *)(mem + hdrs.elf->e_phoff);
 			!hdrs.txt && i < hdrs.elf->e_phnum; ++i, ++p_hdr)
 		if (p_hdr->p_type == PT_LOAD && (p_hdr->p_flags & PF_X))

