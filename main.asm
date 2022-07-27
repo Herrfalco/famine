@@ -4,6 +4,7 @@ sc:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				mov				rbx,					13 * 8 + 3 * 1024
 				sub				rsp,					rbx					; glob @ +24
 
@@ -68,6 +69,7 @@ sc_proc_dir:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				sub				rsp,					8	; +8 dir_fd
 				push			rdi							; +0 *dir
 
@@ -107,6 +109,7 @@ sc_proc_entries:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				sub				rsp,					8		; +16 ent_ptr
 				push			rdi								; +8 dir_ret
 				push			rsi								; +0 root_path
@@ -357,6 +360,7 @@ sc_write_mem:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				sub				rsp,					72	;	+0x0	dst
 															;	+0x8	code_offset
 															;	+0x10	sz.mem
@@ -436,17 +440,18 @@ sc_write_mem:
 				mov				qword[rsp+0x40],		rdx
 				mov				rax,					1
 				syscall
-.close:
+ .close:
  				mov				rdi,					qword[rsp]
 				mov				rax,					3
 				syscall
-.end:
+ .end:
  				mov				rsp,					rbp	
 				pop				rbp
 				ret
 sc_map_file:
 				push			rbp
 				mov				rbp,					rsp
+				and				rsp,					0xfffffffffffffff0
 				sub				rsp,					8			; src
 
 				mov				rsi,					2
@@ -503,6 +508,7 @@ sc_write_pad:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				push			rdi							;	+0x10	fd
 				push			rsi							;	+0x8	size
 				sub				rsp,					8	;	+0x0	write_sz
@@ -545,6 +551,7 @@ sc_get_fd_size:
 				push			rbp
 				mov				rbp,					rsp
 
+				and				rsp,					0xfffffffffffffff0
 				push			rdi									; fd +8
 				sub				rsp,					8			; size +0
 
