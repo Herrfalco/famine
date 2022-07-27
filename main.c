@@ -183,6 +183,7 @@ static int		set_x_pad(void) {
 	Elf64_Shdr	*s_hdr;
 	uint64_t	i;
 
+	x_pad = 0;
 	if (sz.f_pad < sz.load) {
 		if (sz.m_pad >= sz.load) {
 			for (i = 0, p_hdr = (Elf64_Phdr *)(mem + hdrs.elf->e_phoff);
