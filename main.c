@@ -6,7 +6,7 @@
 /*   By: fcadet <fcadet@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/22 12:32:02 by fcadet            #+#    #+#             */
-/*   Updated: 2022/07/26 16:28:41 by fcadet           ###   ########.fr       */
+/*   Updated: 2022/07/27 22:24:35 by fcadet           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -194,6 +194,7 @@ static int		set_x_pad(void) {
 					i < hdrs.elf->e_shnum; ++i, ++s_hdr)
 				if (s_hdr->sh_offset >= hdrs.txt->p_offset + hdrs.txt->p_filesz)
 					s_hdr->sh_offset += PAGE_SZ;
+			hdrs->elf->e_shoff += PAGE_SZ;
 			x_pad = 1;
 		} else
 			return (-1);

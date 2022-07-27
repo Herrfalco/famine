@@ -247,6 +247,7 @@ sc_set_x_pad:
 				add				rdx,					64
 				jmp				.loop_2
 .set_pad:
+				add				qword[r8+0x28],			0x1000
  				mov				qword[rdi+0xc68],		1
 .success:
  				xor				rax,					rax
