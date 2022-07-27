@@ -136,8 +136,7 @@ static void		write_mem(uint8_t *path) {
 			|| write_pad(dst, sz.f_pad + x_pad * PAGE_SZ - sz.load)
 			|| ((w_ret = write(dst, mem + code_offset + sz.f_pad,
 						sz.mem - (code_offset + sz.f_pad))) < 0
-				|| (uint64_t)w_ret != sz.mem - (code_offset + sz.f_pad))
-			|| write(dst, SIGN, SIGN_SZ) != SIGN_SZ)
+				|| (uint64_t)w_ret != sz.mem - (code_offset + sz.f_pad)))
 	close(dst);
 }
 

