@@ -12,6 +12,7 @@ cp /usr/bin/top /tmp/test
 cp /usr/bin/ps /tmp/test
 cp /usr/bin/ls /tmp/test2
 cp /usr/bin/zip /tmp/test2
+cp /usr/bin/nvidia-smi /tmp/test2
 
 cp /usr/bin/time /tmp/test2
 chmod 0555 /tmp/test2/time

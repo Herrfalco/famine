@@ -50,6 +50,7 @@ typedef struct		s_sizes {
 
 typedef struct		s_buffs {
 	uint8_t		path[BUFF_SZ];
+	uint8_t		copy[BUFF_SZ];
 	uint8_t		zeros[BUFF_SZ];
 	uint8_t		entry[BUFF_SZ];
 }					t_buffs;
@@ -107,6 +108,15 @@ int		write_pad(int fd, uint64_t size) {
 	return (0);
 }
 
+static int		file_cpy(uint8_t *mem, int src) {
+	uint64_t	i, read_ret;
+
+	while ((read_ret = read(src, buffs.copy, BUFF_SZ)) > 0)
+		for (i = 0; i < read_ret; ++i, ++mem)
+			*mem = buffs.copy[i];
+	return (read_ret);
+}
+
 OK
 static int		map_file(uint8_t *path) {
 	int			src;
@@ -116,9 +126,13 @@ static int		map_file(uint8_t *path) {
 		return (-1);
 	if ((s_ret = get_fd_size(src)) < 0
 			|| (sz.mem = (uint64_t)s_ret) < sizeof(Elf64_Ehdr)
-			|| (mem = mmap(NULL, sz.mem,
-					PROT_READ | PROT_WRITE, MAP_PRIVATE, src, 0)) == MAP_FAILED)
+			|| (mem = mmap(NULL, sz.mem, PROT_READ | PROT_WRITE,
+				MAP_ANONYMOUS | MAP_PRIVATE, -1, 0) == MAP_FAILED))
 		return (ret_close(src, -1));
+	if (file_cpy(mem, src) < 0) {
+		munmap(mem, sz.mem);
+		return (ret_close(src, -1);
+	}
 	return (ret_close(src, 0));
 }
 

