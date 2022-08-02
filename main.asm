@@ -311,8 +311,7 @@ sc_check_infection:
 				mov				r9,						qword[r8+0x50]
 				add				rdi,					qword[r9+0x8]
 				add				rdi,					qword[r9+0x20]
-				add				rdi,					qword[r8+0x30]
-				sub				rdi,					49
+				sub				rdi,					50
 				lea				rsi,					[rel sc_sign]
 				mov				rdx,					49
 				call			sc_str_n_cmp

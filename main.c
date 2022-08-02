@@ -167,8 +167,8 @@ static int		test_elf_hdr(void) {
 
 OK
 static int		check_infection(void) {
-	if (!str_n_cmp((char *)(mem + hdrs.txt->p_offset + hdrs.txt->p_filesz +
-			sz.load - SIGN_SZ), SIGN, SIGN_SZ))
+	if (!str_n_cmp((char *)(mem + hdrs.txt->p_offset + hdrs.txt->p_filesz
+		- SIGN_SZ), SIGN, SIGN_SZ))
 		return (-1);
 	return (0);
 }
