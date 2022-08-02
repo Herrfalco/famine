@@ -486,15 +486,15 @@ sc_map_file:
 				cmp				rax,					-1
 				je				.err_close
 
-				mov				rdi,					rax
+				mov				r8,						qword[rel sc_glob]
+				mov				qword[r8+0xc60],		rax
+
+				mov				rdi,					qword[r8+0xc60]
 				mov				rsi,					qword[rsp]
 				call			sc_file_cpy
 
 				cmp				rax,					0
 				jl				.munmap
-
-				mov				r8,						qword[rel sc_glob]
-				mov				qword[r8+0xc60],		rax
 
 				mov				rdi,					qword[rsp]
 				mov				rax,					3
